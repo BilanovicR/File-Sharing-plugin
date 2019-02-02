@@ -1,0 +1,9 @@
+{
+    "author": "Ruzica Bilanovic",
+    "description": "Pluggable file sharing app",
+    "version": "1.0.0",
+    "symbolic_name": "File share",
+    "app_version": "1.0.0",
+    "release_notes": "First version of app, school project",
+    "size": 1.0
+}
