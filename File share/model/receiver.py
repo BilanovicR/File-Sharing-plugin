@@ -2,6 +2,7 @@ from PySide2 import QtNetwork
 from .setup import Setup
 from PySide2.QtCore import QFile, QByteArray, QIODevice, Signal, QDataStream, QObject
 from sys import getsizeof
+from pathlib import Path
 
 
 class Receiver():
@@ -36,6 +37,9 @@ class Receiver():
         self._file_name = stream.readString()
         line = QByteArray()
         line = self._socket.readAll()
+        directory = Path(Setup().get_download_dir())
+        if not (directory.exists() and directory.is_dir()):
+            directory.mkdir()
         self._receiving_file = QFile(Setup().get_download_dir() + str(self._file_name))
         print(Setup().get_download_dir() + str(self._file_name))
         if not (self._receiving_file.open(QIODevice.WriteOnly)):
