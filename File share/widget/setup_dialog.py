@@ -1,4 +1,5 @@
 from PySide2 import QtWidgets, QtCore, QtGui
+from PySide2.QtCore import QDir
 from ..model.setup import Setup
 
 class SetupDialog(QtWidgets.QDialog):
@@ -11,12 +12,12 @@ class SetupDialog(QtWidgets.QDialog):
         self.nameLabel = QtWidgets.QLabel("Name")
         self.nameLineEdit = QtWidgets.QLineEdit(self)
         self.nameLineEdit.setText(self.setup.get_name())
-        self.nameLineEdit.clearFocus() #popraviti, ne radi
+        self.nameLineEdit.clearFocus() #TODO namesti da se izgubi fokus na input polja
         self.nameLabel.setBuddy(self.nameLineEdit)
 
         self.portLabel = QtWidgets.QLabel("Port")
         self.portLineEdit = QtWidgets.QLineEdit(self)
-        #self.portLineEdit.setText(self.setup.get_port())
+        self.portLineEdit.setText(str(self.setup.get_port()))
         self.portLabel.setBuddy(self.portLineEdit)
 
         self.download_dirLabel = QtWidgets.QLabel("Download directory")
@@ -46,8 +47,9 @@ class SetupDialog(QtWidgets.QDialog):
         self.setLayout(self.gridLayout)
 
     def on_accept(self):
-        #TODO
-        pass
+        self.setup.set_download_dir(self.download_dirLineEdit.text())
+        self.setup.set_port(self.portLineEdit.text())
+        self.setup.set_name(self.nameLineEdit.text())
 
     def on_select_dir(self):
         #TODO
@@ -58,6 +60,7 @@ class SetupDialog(QtWidgets.QDialog):
                                        QtWidgets.QFileDialog.ShowDirsOnly
                                        | QtWidgets.QFileDialog.DontResolveSymlinks)
         
-        print(self.selected_dir)#sacuvaj izabrani dir i upisi sve vrednosti da se ucitaju odnekle
+        print(self.selected_dir)#sacuvaj izabrani dir i upisi sve vrednosti da se ucitaju
+        self.setup.set_download_dir(self.selected_dir)
         
 

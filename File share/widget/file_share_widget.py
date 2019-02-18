@@ -4,9 +4,10 @@ from .setup_dialog import SetupDialog
 from ..model.setup import Setup
 from ..model.broadcaster import Broadcaster
 from ..model.device import Device
+from ..model.file import MyFile
 from ..model.sender import Sender
 from ..util.converter import Converter
-from PySide2.QtCore import QFile, QDataStream
+from PySide2.QtCore import QFile, QDataStream, QObject, Signal, Slot
 import os
 
 
@@ -42,7 +43,7 @@ class FileShareWidget(QtWidgets.QWidget):
             QtWidgets.QTableView.SingleSelection)
         self.table_view_upload.setSelectionBehavior(
             QtWidgets.QTableView.SelectionBehavior.SelectRows)
-        self.table_view_upload.setColumnCount(3)
+        self.table_view_upload.setColumnCount(4)
         self.header_upload = self.table_view_upload.horizontalHeader()
         self.header_upload.setSectionResizeMode(
             0, QtWidgets.QHeaderView.ResizeToContents)
@@ -50,8 +51,10 @@ class FileShareWidget(QtWidgets.QWidget):
             1, QtWidgets.QHeaderView.ResizeToContents)
         self.header_upload.setSectionResizeMode(
             2, QtWidgets.QHeaderView.ResizeToContents)
+        self.header_upload.setSectionResizeMode(
+            3, QtWidgets.QHeaderView.ResizeToContents)
         self.table_view_upload.setHorizontalHeaderLabels(
-            ["File", "Size", "Completed"])
+            ["File", "Size", "Receiver", "Completed"])
         self.vbox_layout_upload.addWidget(self.label_upload)
         self.vbox_layout_upload.addWidget(self.table_view_upload)
 
@@ -64,7 +67,7 @@ class FileShareWidget(QtWidgets.QWidget):
         self.table_view_download = QtWidgets.QTableWidget()
         self.table_view_download.setSelectionMode(
             QtWidgets.QTableView.SingleSelection)
-        self.table_view_download.setColumnCount(3)
+        self.table_view_download.setColumnCount(4)
         self.header_download = self.table_view_download.horizontalHeader()
         self.header_download.setSectionResizeMode(
             0, QtWidgets.QHeaderView.ResizeToContents)
@@ -72,8 +75,10 @@ class FileShareWidget(QtWidgets.QWidget):
             1, QtWidgets.QHeaderView.ResizeToContents)
         self.header_download.setSectionResizeMode(
             2, QtWidgets.QHeaderView.ResizeToContents)
+        self.header_download.setSectionResizeMode(
+            3, QtWidgets.QHeaderView.ResizeToContents)
         self.table_view_download.setHorizontalHeaderLabels(
-            ["File", "Size", "Completed"])
+            ["File", "Size", "Sender", "Completed"])
         self.table_view_download.setSelectionBehavior(
             QtWidgets.QTableView.SelectionBehavior.SelectRows)
         self.vbox_layout_download.addWidget(self.label_download)
@@ -88,6 +93,7 @@ class FileShareWidget(QtWidgets.QWidget):
         self.broadcaster = Broadcaster()
         self.this_device = Device()
         self.this_device.set_this_device()
+        #self.this_device._server.newConnection.connect(self.receive_file)
         self.broadcaster.start_broadcast()
         self.selected_file_path = None
         self.selected_device = None
@@ -99,7 +105,7 @@ class FileShareWidget(QtWidgets.QWidget):
         select_receiver_dialog = SelectReceiverDialog(
             self.broadcaster.get_other_devices())
         if select_receiver_dialog.exec_() == QtWidgets.QDialog.Accepted:
-            self.selected_device = select_receiver_dialog.selected_device
+            self.selected_device = select_receiver_dialog.selected_device            
             self.send_file(self.selected_file_path, self.selected_device)
 
     def on_setup(self):
@@ -109,25 +115,56 @@ class FileShareWidget(QtWidgets.QWidget):
             pass
 
     def send_file(self, file_path, receiver):
+        self.this_device.send_file(file_path, receiver)
+        print("dodat upload")
         qfile = QFile(file_path)
         size_of_file = qfile.size()
-        self.this_device.send_file(file_path, receiver)
+        
         rows = self.table_view_upload.rowCount()
         self.table_view_upload.setRowCount(rows+1)
+
         name = QtWidgets.QTableWidgetItem()
         name.setText(file_path)
         name.setFlags(name.flags() ^ QtCore.Qt.ItemIsEditable)
+
         size = QtWidgets.QTableWidgetItem()
         size.setText(Converter().size_to_string(size_of_file))
         size.setFlags(size.flags() ^ QtCore.Qt.ItemIsEditable)
+
+        send_progress = QtWidgets.QProgressBar()
+        send_progress.setValue(0)
+
+        receiver_name = QtWidgets.QTableWidgetItem()
+        receiver_name.setText(receiver.get_name())
+        receiver_name.setFlags(receiver_name.flags() ^ QtCore.Qt.ItemIsEditable)
+
         self.table_view_upload.setItem(rows, 0, name)
         self.table_view_upload.setItem(rows, 1, size)
-        # dodati procenat koliko je zavrseno
+        self.table_view_upload.setItem(rows, 2, receiver_name)
+        self.table_view_upload.setCellWidget(rows, 3, send_progress)
 
-    def receive_file(self, file_name):
+
+    def receive_file(self):
+        print("dodat download")
         rows = self.table_view_download.rowCount()
         self.table_view_download.setRowCount(rows+1)
+
         name = QtWidgets.QTableWidgetItem()
-        name.setText(file_name)
+        name.setText(self.this_device._receiver.get_file_name())
         name.setFlags(name.flags() ^ QtCore.Qt.ItemIsEditable)
         self.table_view_download.setItem(rows, 0, name)
+
+        size = QtWidgets.QTableWidgetItem()
+        size.setText(str(self.this_device._receiver.get_file_size()))
+        size.setFlags(size.flags() ^ QtCore.Qt.ItemIsEditable)
+        self.table_view_download.setItem(rows, 1, size)
+
+        sender = QtWidgets.QTableWidgetItem()
+        sender.setText(str(self.this_device._receiver._socket.peerAddress()))
+        sender.setFlags(sender.flags() ^ QtCore.Qt.ItemIsEditable)
+        self.table_view_download.setItem(rows, 2, sender)
+
+        receive_progress = QtWidgets.QProgressBar()
+        receive_progress.setValue(0)
+        self.table_view_download.setCellWidget(rows, 3, receive_progress)
+        
