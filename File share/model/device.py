@@ -1,5 +1,5 @@
 from PySide2 import QtNetwork
-from PySide2.QtCore import QByteArray, QIODevice, QFile, Signal
+from PySide2.QtCore import QByteArray, QIODevice, QFile, Signal, QObject
 from .setup import Setup
 from .receiver import Receiver
 from .sender import Sender
@@ -9,23 +9,22 @@ class Device():
     def __init__(self):
         self._ip_address = None
         self._name = ""
-        self._socket = QtNetwork.QUdpSocket()        
+        self._socket = QtNetwork.QTcpSocket()        
         self._receiver = None
-        
+        self._sender = None      
 
     def set_this_device(self):
-        adresses = QtNetwork.QNetworkInterface.allAddresses()
-        for adress in adresses:
-            if adress.isLinkLocal() or adress.isBroadcast() or adress.isMulticast() or adress.isLoopback():
-                pass
-            else:
-                self._ip_address = adress
+        addresses = QtNetwork.QNetworkInterface.allAddresses()
+        for address in addresses:
+            if not (address.isLinkLocal() or address.isBroadcast() or address.isMulticast() or address.isLoopback() or address.protocol() == QtNetwork.QAbstractSocket.IPv6Protocol):
+                self._ip_address = address                
         info = QtNetwork.QHostInfo()
         self._name = info.localHostName()
-
-        self._socket.bind(Setup().get_port())
-        self._socket.readyRead.connect(self.receive_file)
-        self._socket.disconnected.connect(self.reset)
+        self._server = QtNetwork.QTcpServer()
+         
+        self._server.setSocketDescriptor(self._socket.socketDescriptor()) 
+        self._server.listen(self._ip_address, Setup().get_port())
+        self._server.newConnection.connect(self.receive)
 
     def get_name(self):
         return self._name
@@ -41,19 +40,12 @@ class Device():
 
     def send_file(self, file_path, receiver):
         if (file_path is not None) and (receiver is not None):
-            sender = Sender(self._socket, file_path, receiver)
-            sender.start()
+            self._sender = Sender(self._socket, file_path, receiver)
+            self._sender.start()
 
-    def receiving(self, file_name):
-        return file_name
-
-    def receive_file(self):
-        if (self._receiver is None):
-            self._receiver = Receiver(self._socket)           
-            file_name = self._receiver.read_name_datagram()                        
-        else:
-            self._receiver.read_data_datagram()
-
-    def reset(self):
-        self._receiver = None
-        print("disconnected, finished receiving")
+    def receive(self):
+        self._socket = self._server.nextPendingConnection()
+        self._socket.waitForBytesWritten(3000)
+        self._receiver = Receiver(self._socket)
+        received_file = self._receiver.start()
+        return received_file

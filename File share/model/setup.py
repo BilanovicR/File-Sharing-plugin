@@ -2,8 +2,7 @@ class Setup():
     def __init__(self):
         self._port = 17116
         self._name = "My device"
-        self._download_dir = ".\\downloads\\"
-        self._buffer_size = 60000
+        self._download_dir = "downloads/"
 
     def get_port(self):
         return self._port
@@ -23,8 +22,3 @@ class Setup():
     def set_download_dir(self, download_dir):
         self._download_dir = download_dir
 
-    def get_buffer_size(self):
-        return self._buffer_size
-
-    def set_buffer_size(self, new_size):
-        self._buffer_size = new_size

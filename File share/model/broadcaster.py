@@ -28,9 +28,7 @@ class Broadcaster():
             if (interface.CanBroadcast):
                 address_entries = interface.addressEntries()
                 for i in range(len(address_entries)):
-                    if address_entries[i].broadcast().isLoopback() or address_entries[i].broadcast().isNull():
-                        pass
-                    else:
+                    if not (address_entries[i].broadcast().isLoopback() or address_entries[i].broadcast().isNull()):
                         broadcast_addresses.add(address_entries[i].broadcast().toString())
         return broadcast_addresses
 
@@ -38,7 +36,7 @@ class Broadcaster():
         broadcast_addresses = self.get_broadcast_addresses()        
         for address in broadcast_addresses:
             datagram = self.this_device.get_name()
-            self._socket.writeDatagram(QtCore.QByteArray(bytes(datagram, "ascii")), QtNetwork.QHostAddress(address), self._broadcast_port)
+            self._socket.writeDatagram(QtCore.QByteArray(bytes(datagram, "ascii")), QtNetwork.QHostAddress(address), 45454)
 
     def process_broadcast(self):
         while self._socket.hasPendingDatagrams():
