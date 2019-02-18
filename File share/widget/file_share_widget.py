@@ -4,7 +4,6 @@ from .setup_dialog import SetupDialog
 from ..model.setup import Setup
 from ..model.broadcaster import Broadcaster
 from ..model.device import Device
-from ..model.file import MyFile
 from ..model.sender import Sender
 from ..util.converter import Converter
 from PySide2.QtCore import QFile, QDataStream, QObject, Signal, Slot
